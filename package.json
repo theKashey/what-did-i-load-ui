@@ -1,0 +1,11 @@
+{
+  "name": "what-did-i-load-ui",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@vercel/node": "^1.10.0",
+    "vercel": "^22.0.1",
+    "what-did-i-load": "^0.0.2"
+  }
+}

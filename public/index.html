@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charSet="utf-8"/>
+    <head>
+        <title>What did I load 😅</title>
+    </head>
+<body>
+<style>
+    main {
+        margin: auto;
+        margin-top: 10vh;
+        justify-content: center;
+        display: grid;
+        grid-gap: 64px;
+    }
+
+    #results {
+        display: grid;
+        grid-auto-flow: column;
+        grid-gap: 32px;
+    }
+
+    pre {
+        background-color: #EEE;
+        width: 300px;
+        height: 50vh;
+        overflow: auto;
+    }
+
+    #controls{
+        display: grid;
+        grid-auto-flow: column;
+        grid-gap: 16px;
+    }
+    #controls input,
+    #controls textarea{
+        display: block;
+    }
+</style>
+<main>
+    <div>
+        <a href="https://github.com/theKashey/what-did-i-load">github</a>
+        <h1>What did I load 😅</h1>
+    </div>
+    <form>
+        <input name="url" required placeholder="please enter url"/>
+        <button type="submit">double check</button>
+
+        <label>
+            device:
+            <select name="device">
+                <option>iPhone</option>
+                <option>iPad</option>
+                <option>Desktop</option>
+                <option>Retina Desktop</option>
+            </select>
+        </label>
+    </form>
+    <div id="controls">
+        <label>
+            Only type
+            <input name="only-type" placeholder="focus on specific content type"/>
+        </label>
+        <label>
+            Only host
+            <input name="only-host" placeholder="focus on specific host"/>
+        </label>
+        <label>
+            Ignore hosts
+            <textarea id="ignore-hosts" placeholder="ignore these hosts"></textarea>
+        </label>
+    </div>
+    <div id="results">
+        <pre id="types">...</pre>
+        <pre id="hosts">...</pre>
+    </div>
+</main>
+
+<script>
+  let resources = [];
+
+  const getType = (mime = 'undefined') => {
+    if (mime.startsWith('image/svg')) {
+      return 'svg';
+    }
+    if (mime.startsWith('image/')) {
+      return 'image';
+    }
+    if (mime.startsWith('application/javascript') || mime.startsWith('application/x-javascript') || mime.startsWith('text/javascript')) {
+      return 'script';
+    }
+    if (mime.startsWith('text/css')) {
+      return 'style';
+    }
+    return mime.split(';')[0];
+  }
+
+  const updateDashBoard = () => {
+    const onlyType = document.querySelector('[name="only-type"]').value;
+    const onlyHost = document.querySelector('[name="only-host"]').value;
+    const ignoreHosts = document.querySelector('[name="ignoreHosts"]').textContent.split('\n');
+
+    const types = {};
+    const perType = {};
+    data.forEach((resource) => {
+      const type = getType(resource.type);
+      if (onlyType && onlyType !== type) {
+        return;
+      }
+      if (ignoreHosts && ignoreHosts.includes(resource.host)) {
+        return;
+      }
+      if (onlyHost && onlyHost !== resource.host) {
+        return;
+      }
+      if (!types[type]) {
+        types[type] = {};
+        perType[type] = {
+          count: 0,
+          bytes: 0,
+        };
+      }
+      if (!types[type][resource.host]) {
+        types[type][resource.host] = 0;
+      }
+      types[type][resource.host] += resource.size;
+      perType[type].bytes += resource.size;
+      perType[type].count += 1;
+    });
+    document.querySelector('#types').innerHTML = JSON.stringify(perType, undefined, 2)
+    document.querySelector('#hosts').innerHTML = JSON.stringify(types, undefined, 2)
+  }
+
+  function onFormSubmit(event) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    fetch('/api/what', {
+      method: 'post',
+      body: JSON.stringify({
+        url: data.get('url'),
+        device: data.get('device'),
+      }),
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      }
+    }).then(async res => {
+      resources = await res.json();
+      updateDashBoard();
+    }).catch(e => alert(e))
+  }
+
+  document.querySelector('form').addEventListener('submit', onFormSubmit);
+  document.querySelectorAll('#controls input, #controls textarea').forEach(el => el.addEventListener('change', updateDashBoard))
+</script>
+</body>
+</html>
