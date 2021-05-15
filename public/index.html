@@ -28,13 +28,14 @@
         overflow: auto;
     }
 
-    #controls{
+    #controls {
         display: grid;
         grid-auto-flow: column;
         grid-gap: 16px;
     }
+
     #controls input,
-    #controls textarea{
+    #controls textarea {
         display: block;
     }
 </style>
@@ -68,8 +69,9 @@
         </label>
         <label>
             Ignore hosts
-            <textarea id="ignore-hosts" placeholder="ignore these hosts"></textarea>
+            <textarea name="ignore-hosts" placeholder="ignore these hosts"></textarea>
         </label>
+        <button onclick="javascript:updateDashBoard()">Update</button>
     </div>
     <div id="results">
         <pre id="types">...</pre>
@@ -99,16 +101,16 @@
   const updateDashBoard = () => {
     const onlyType = document.querySelector('[name="only-type"]').value;
     const onlyHost = document.querySelector('[name="only-host"]').value;
-    const ignoreHosts = document.querySelector('[name="ignoreHosts"]').textContent.split('\n');
+    const ignoreHosts = document.querySelector('[name="ignore-hosts"]').value.split('\n');
 
     const types = {};
     const perType = {};
-    data.forEach((resource) => {
+    resources.forEach((resource) => {
       const type = getType(resource.type);
       if (onlyType && onlyType !== type) {
         return;
       }
-      if (ignoreHosts && ignoreHosts.includes(resource.host)) {
+      if (ignoreHosts.length && ignoreHosts.includes(resource.host)) {
         return;
       }
       if (onlyHost && onlyHost !== resource.host) {
@@ -134,21 +136,28 @@
 
   function onFormSubmit(event) {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    fetch('/api/what', {
-      method: 'post',
-      body: JSON.stringify({
-        url: data.get('url'),
-        device: data.get('device'),
-      }),
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      }
-    }).then(async res => {
-      resources = await res.json();
-      updateDashBoard();
-    }).catch(e => alert(e))
+    const form = event.currentTarget;
+    const submit = form.querySelector('button');
+    try {
+      submit.disabled = true;
+      const data = new FormData(form);
+      fetch('/api/what', {
+        method: 'post',
+        body: JSON.stringify({
+          url: data.get('url'),
+          device: data.get('device'),
+        }),
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        }
+      }).then(async res => {
+        resources = await res.json();
+        updateDashBoard();
+      }).catch(e => alert(e))
+    } finally {
+      submit.disabled = false;
+    }
   }
 
   document.querySelector('form').addEventListener('submit', onFormSubmit);
