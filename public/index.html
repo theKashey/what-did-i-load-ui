@@ -134,14 +134,14 @@
     document.querySelector('#hosts').innerHTML = JSON.stringify(types, undefined, 2)
   }
 
-  function onFormSubmit(event) {
+  async function onFormSubmit(event) {
     event.preventDefault();
     const form = event.currentTarget;
     const submit = form.querySelector('button');
     try {
       submit.disabled = true;
       const data = new FormData(form);
-      fetch('/api/what', {
+      const res = await fetch('/api/what', {
         method: 'post',
         body: JSON.stringify({
           url: data.get('url'),
@@ -151,10 +151,11 @@
           Accept: "application/json",
           "Content-Type": "application/json",
         }
-      }).then(async res => {
-        resources = await res.json();
-        updateDashBoard();
-      }).catch(e => alert(e))
+      });
+      resources = await res.json();
+      updateDashBoard();
+    } catch (e) {
+      alert(e);
     } finally {
       submit.disabled = false;
     }
